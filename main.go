@@ -5,8 +5,13 @@ import (
 	"net/http"
 	"os"
 )
+const WaiterNum = 1
+const TableNum = 1
+
 
 var kitchenHost = "http://localhost"
+var tableList = newTableList()
+var waiterList = newWaiterList()
 
 func main() {
 
@@ -19,12 +24,16 @@ func main() {
 
 	fmt.Println("Dining hall is up and running!")
 
-	http.HandleFunc("/send",sendHandler)
+	for _, waiter := range waiterList {
+		go waiter.work()
+	}
+
 	http.HandleFunc("/delivery",deliveryHandler)
 	err := http.ListenAndServe(":8001", nil)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
 }
 

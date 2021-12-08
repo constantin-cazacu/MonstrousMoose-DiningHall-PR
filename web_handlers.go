@@ -1,48 +1,23 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
-	"time"
 )
 
-func sendHandler(w http.ResponseWriter, r *http.Request) {
-	order := Order{
-		OrderId:    rand.Intn(6),
-		TableId:    rand.Intn(6),
-		WaiterId:   rand.Intn(2),
-		Items:      getItems(),
-		Priority:   rand.Intn(3),
-		MaxWait:    rand.Intn(200) + 40,
-		PickUpTime: time.Now().Unix(),
-	}
+var deliveryChan = make(chan *Delivery)
 
-	marshaledOrder, _ := json.Marshal(order)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Println(string(marshaledOrder))
-	request,_ := http.NewRequest(http.MethodPost, kitchenHost+":8000/order", bytes.NewBuffer(marshaledOrder))
-	response, err := http.DefaultClient.Do(request)
+func deliveryHandler(w http.ResponseWriter, r *http.Request) {
 
+	latestDelivery := new(Delivery)
+	var requestBody = make([]byte, r.ContentLength)
+	r.Body.Read(requestBody)
+	json.Unmarshal(requestBody, latestDelivery)
 
-	if err != nil {
-		fmt.Fprintln(w,"ERROR:",err)
-	} else {
+	deliveryChan <- latestDelivery
 
-		fmt.Fprintln(w, "Sent:"+string(marshaledOrder))
+	//Respond with "OK"
+	fmt.Fprint(w, "OK")
 
-		var responseBuffer = make([]byte,response.ContentLength)
-
-		response.Body.Read(responseBuffer)
-
-		fmt.Fprintln(w, "Received:"+string(responseBuffer))
-	}
-}
-
-func deliveryHandler(w http.ResponseWriter, r *http.Request){
-	fmt.Fprint(w,"OK")
 }
